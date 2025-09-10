@@ -1,0 +1,25 @@
+name: Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      version:
+        description: 'Version to deploy'
+        required: false
+        default: 'latest'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to ${{ github.event.inputs.environment }}
+      run: |
+        echo "Deploying version ${{ github.event.inputs.version }} to ${{ github.event.inputs.environment }}"
+        # Your deployment commands here
