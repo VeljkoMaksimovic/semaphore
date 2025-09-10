@@ -1,0 +1,105 @@
+name: RBAC CE CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'rbac/ce/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'rbac/ce/**'
+
+permissions:
+  contents: read
+
+env:
+  DOCKER_BUILDKIT: "1"
+
+jobs:
+  # Equivalent to "RBAC CE: Provision Test Image"
+  provision-test-image:
+    name: "RBAC CE: Provision Test Image"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rbac/ce
+    env:
+      MIX_ENV: test
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build test image
+      run: |
+        make build
+        make push
+
+  # Equivalent to "RBAC CE: Provision Prod Image"  
+  provision-prod-image:
+    name: "RBAC CE: Provision Prod Image"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rbac/ce
+    env:
+      MIX_ENV: prod
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build prod image
+      run: |
+        make pull
+        make build
+        make push
+
+  # Equivalent to "RBAC CE: QA"
+  qa:
+    name: "RBAC CE: QA"
+    runs-on: ubuntu-latest
+    needs: provision-test-image
+    defaults:
+      run:
+        working-directory: rbac/ce
+    env:
+      MIX_ENV: test
+    strategy:
+      matrix:
+        # Parallelism: 2 equivalent
+        partition: [1, 2]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build for QA
+      run: make build
+    - name: Lint
+      run: make format.ex
+    - name: Credo
+      run: make lint.ex
+    - name: Test
+      run: |
+        export TEST_RESULTS_NAME="RBAC CE Tests"
+        make test.ex
+      env:
+        # Pass partition info if your tests support it
+        TEST_PARTITION: ${{ matrix.partition }}
+
+  # Equivalent to "RBAC CE: Deployment Preconditions"
+  deployment-preconditions:
+    name: "RBAC CE: Deployment Preconditions" 
+    runs-on: ubuntu-latest
+    needs: provision-prod-image
+    defaults:
+      run:
+        working-directory: rbac/ce
+    env:
+      MIX_ENV: prod
+      SERVICE_NAME: "RBAC CE"
+    steps:
+    - uses: actions/checkout@v4
+    - name: Pull images
+      run: make pull
+    - name: Check code
+      run: make check.ex.code
+    - name: Check dependencies  
+      run: make check.ex.deps
+    - name: Check docker
+      run: |
+        make build
+        make check.docker
