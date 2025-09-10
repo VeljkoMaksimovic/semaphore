@@ -21,4 +21,5 @@ be found at <https://hexdocs.pm/rbac>.
 
 
 tsts
+test
 
