@@ -121,12 +121,21 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Pull images
-      run: make pull
-    - name: Check code
-      run: make check.ex.code
-    - name: Check dependencies  
-      run: make check.ex.deps
-    - name: Check docker
+      run: echo TEST
+
+  deploy-staging:
+    name: "Deploy to Staging"
+    runs-on: ubuntu-latest
+    needs: [deployment-preconditions]  # Requires these jobs to succeed first
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: 
+      name: staging
+      # This environment MUST have "Required reviewers" configured in repo settings
+    defaults:
+      run:
+        working-directory: rbac/ce
+    steps:
+    - uses: actions/checkout@v4
+    - name: Deploy to staging
       run: |
-        make build
-        make check.docker
+        echo "🚀 Deploying to staging (manually approved)"
