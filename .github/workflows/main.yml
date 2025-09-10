@@ -54,6 +54,33 @@ jobs:
   qa:
     name: "RBAC CE: QA"
     runs-on: ubuntu-latest
+    services:
+      rabbitmq:
+        image: rabbitmq:3.8-management
+        env:
+          RABBITMQ_DEFAULT_USER: admin
+          RABBITMQ_DEFAULT_PASS: admin
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+        ports:
+          - 5672:5672    # AMQP port
+          - 15672:15672  # Management UI port
+      postgres:
+        image: postgres:9.6
+        env:
+          POSTGRES_DB: rbac_ce
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     needs: provision-test-image
     defaults:
       run:
